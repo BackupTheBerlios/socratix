@@ -52,20 +52,7 @@ struct mem_blk {
 extern unsigned long count_ram (void);
 
 
-
-void copy_page_tables (unsigned long *from, unsigned long *to)
-{
-	unsigned long n;
-
-	/*
-	 * the first 4MB of memory are shared between all prozesses,
-	 * this is the kernel memory
-	 */
-
-	for (n = 0; n < 1024; n++)
-		to[n] = from[n];
-}
-
+extern unsigned long kstack[PAGE_SIZE >> 2];
 
 void init_paging (void)
 {
@@ -107,7 +94,7 @@ void init_paging (void)
 			(PAGE_ALIGN (kernel_size) + (d << PAGE_SHIFT));
 
 		/* add the page table to the page directory */
-		page_dir[d] = PAGE_PRESENT | PAGE_WRITE | (unsigned long) page_table;
+		page_dir[d] = PAGE_TABLE | (unsigned long) page_table;
 
 		/* map phys. to lin. memory */
 		for (t = 0; t < 1024; t++) {
@@ -130,7 +117,13 @@ void init_paging (void)
 				break;
 			}
 
-			page_table[t] = PAGE_PRESENT | PAGE_WRITE | addr;
+			if (addr == (unsigned) &kstack[0]) {
+				/* stack is private */
+				page_table[t] = PAGE_PRIVATE | addr;
+			} else {
+				/* we can share the page */
+				page_table[t] = PAGE_SHARED | addr;
+			}
 		}
 	}
 

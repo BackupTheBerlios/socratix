@@ -24,7 +24,9 @@
 
 
 #include <socratix/printk.h>
+#include <socratix/kmalloc.h>
 #include <socratix/page.h>
+#include <socratix/task.h>
 #include <asm/segment.h>
 #include <asm/system.h>
 #include <asm/irq.h>
@@ -32,6 +34,9 @@
 
 
 extern unsigned long kstack[PAGE_SIZE >> 2];
+
+
+Task *idle_task, *current = NULL;
 
 
 struct segment_descriptor_struct
@@ -45,50 +50,13 @@ struct segment_descriptor_struct
 };
  
 
-struct tss_struct {
-	unsigned short	link, unused0;
-	unsigned long	esp0;
-	unsigned short	ss0, unused1;
-	unsigned long	esp1;
-	unsigned short	ss1, unused2;
-	unsigned long	esp2;
-	unsigned short	ss2, unused3;
-	unsigned long	cr3;
-	unsigned long	eip;
-	unsigned long	eflags;
-	unsigned long	eax, ecx, edx, ebx;
-	unsigned long	esp, ebp, esi, edi;
-	unsigned short	es, unused4;
-	unsigned short	cs, unused5;
-	unsigned short	ss, unused6;
-	unsigned short	ds, unused7;
-	unsigned short	fs, unused8;
-	unsigned short	gs, unused9;
-	unsigned short	ldt, unused10;
-	unsigned short	debugtrap;
-	unsigned short	iomapbase;
-	unsigned long	tr;
-};
-
-
-struct task_struct {
-	unsigned long *kernel_stack;	/* pointer to the task's kernel stack */
-	struct tss_struct tss;
-};
-
-
 extern unsigned long pg_dir, gdt;
 
 #define page_dir	((unsigned long *) &pg_dir)
 #define GDT(n)		(((unsigned char *) &gdt) + n)
 
 
-struct task_struct task[2] = {{0, }, {0,  }}, *current;
-
-#define init_task	(&(task[0]))
-
-
-void set_tss (struct task_struct *tsk)
+void set_tss (Task *tsk)
 {
 	struct segment_descriptor_struct *segment = (void *) GDT(tsk->tss.tr);
 
@@ -101,91 +69,47 @@ void set_tss (struct task_struct *tsk)
 }
 
 
-void wutz (void)
-{
-	unsigned long i;
-
-	for (;;) {
-		printk ("B");
-		sti ();
-		for (i = 0; i < 0x220; i++) {
-			unsigned n = i;
-			while (n-- > 0);
-		}
-	}
-}
-
-
-extern unsigned long get_free_page (void);
-
-
-struct pt_reg {
-  long ebx;
-  long ecx;
-  long edx;
-  long esi;
-  long edi;
-  long ebp;
-  long eax;
-  unsigned short ds, __dsu;
-  unsigned short es, __esu;
-  unsigned short fs, __fsu;
-  unsigned short gs, __gsu;
-  long eip;
-  unsigned short cs, __csu;
-  long eflags;
-  long esp;
-  unsigned short ss, __ssu;
-};
-
 extern void do_timer (void);
-extern unsigned long ret_from_sched;
+extern void do_fork (void);
+
+
+extern Task *current, *idle_task;
+
 
 void init_sched (void)
 {
 	unsigned long eflags;
-	struct pt_reg *regs;
 
 	eflags = read_flags ();
 
-	current = init_task;
-	init_task->kernel_stack = kstack;
-	init_task->tss.link = 0;
-	init_task->tss.esp0 = (unsigned long) &kstack[PAGE_SIZE >> 2];
-	init_task->tss.ss0 = KERNEL_DS;
-	init_task->tss.cr3 = (unsigned long) page_dir;
-	init_task->tss.es = KERNEL_DS;
-	init_task->tss.cs = KERNEL_CS;
-	init_task->tss.ss = KERNEL_DS;
-	init_task->tss.ds = KERNEL_DS;
-	init_task->tss.fs = KERNEL_DS;
-	init_task->tss.gs = KERNEL_DS;
-	init_task->tss.tr = 0x18;	/* use the temp entry in gdt */
+	if ((idle_task = kmalloc (sizeof (Task), 0)) == NULL) {
+		printk ("init_sched: not enough memory\n");
+		write_flags (eflags);
+		return;
+	}
 
-	task[1] = task[0];
-	task[1].kernel_stack = (unsigned long *) get_free_page ();
-	task[1].tss.esp0 = ((unsigned long) &task[1].kernel_stack[PAGE_SIZE >> 2]) - sizeof (struct pt_reg);
-	task[1].tss.esp = ((unsigned long) &task[1].kernel_stack[PAGE_SIZE >> 2]) - sizeof (struct pt_reg);
-	task[1].tss.eip = (unsigned long) &ret_from_sched;
-	task[1].tss.tr = 0x20;
+	idle_task->next		= idle_task;
+	idle_task->kernel_stack	= kstack;
+	idle_task->tss.link	= 0;
+	idle_task->tss.esp0	= (unsigned long) &kstack[PAGE_SIZE >> 2];
+	idle_task->tss.ss0	= KERNEL_DS;
+	idle_task->tss.cr3	= (unsigned long) page_dir;
+	idle_task->tss.es	= KERNEL_DS;
+	idle_task->tss.cs	= KERNEL_CS;
+	idle_task->tss.ss	= KERNEL_DS;
+	idle_task->tss.ds	= KERNEL_DS;
+	idle_task->tss.fs	= KERNEL_DS;
+	idle_task->tss.gs	= KERNEL_DS;
+	idle_task->tss.tr	= 0x18;
 
-	regs = ((struct pt_reg *) task[1].tss.esp0);
-	regs->ebx = regs->ecx = regs->edx = regs->esi = regs->edi = 0;
-	regs->ebp = regs->eax = 0;
-	regs->ds = regs->es = regs->fs = regs->gs = KERNEL_DS;
-	regs->eip = (unsigned long) wutz;
-	regs->cs = KERNEL_CS;
-	regs->eflags = read_flags ();
-	regs->esp = task[1].tss.esp;
-	regs->ss = KERNEL_DS;
+	current = idle_task;
+	set_tss (idle_task);
 
-	set_tss (init_task);
-	set_tss (&task[1]);
-
-	write_tr (init_task->tss.tr);
+	write_tr (idle_task->tss.tr);
 
 	cli ();
 	register_interrupt (0x08, do_timer);
+	register_interrupt (0x80, do_fork);
 
 	outb(0x36,0x43);
 	outb(0xa9,0x40);
@@ -197,11 +121,16 @@ void init_sched (void)
 
 void schedule (void)
 {
-	if (current == init_task)
-		current = &task[1];
-	else
-		current = init_task;
+	Task *next;
 
-	/* do long jump to TSS of the new task */
-	ljmp (*(((unsigned char *) &current->tss.tr) - 4));
+	next = current->next;
+
+	if (next != current) {
+/*		set_tss (next);*/
+
+		current = next;
+
+		/* do long jump to TSS of the new task */
+		ljmp (*(((unsigned char *) &next->tss.tr) - 4));
+	}
 }

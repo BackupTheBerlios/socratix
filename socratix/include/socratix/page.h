@@ -27,6 +27,7 @@
 #define __SOCRATIX_PAGE_H
 
 
+#include <asm/segment.h>
 #include <asm/page.h>
 
 

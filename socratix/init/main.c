@@ -44,6 +44,15 @@ extern void print_mem (void);
 
 extern void init_cpu (void);
 
+
+int fork (void)
+{
+	int res;
+	asm volatile ("int $0x80" : "=a" (res) : "a" (1) );
+	return res;
+}
+
+
 void start_kernel (void)
 {
 	unsigned int i;
@@ -60,6 +69,29 @@ void start_kernel (void)
 
 	enable_irqs ();
 
+	if ((i = fork ()) == 0) {
+		/* child */
+		for (;;) {
+			printk ("child ");
+			for (i = 0; i < 0x200; i++) {
+				unsigned n = i;
+				while (n-- > 0);
+			}
+		}
+	} else if (i < 0) {
+		/* error */
+		printk ("error during fork!\n");
+	} else {
+		/* father */
+		for (;;) {
+			printk ("father ");
+			for (i = 0; i < 0x200; i++) {
+				unsigned n = i;
+				while (n-- > 0);
+			}
+		}
+	}
+#if 0
 	for (;;) {
 		char *mem;
 
@@ -79,5 +111,7 @@ void start_kernel (void)
 
 		kfree (mem);
 	}
+#endif
+	for (;;) {}
 }
 

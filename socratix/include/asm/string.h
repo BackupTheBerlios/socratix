@@ -112,11 +112,11 @@ extern inline void *memmovel (void *dest, const void *src, size_t n)
  * The BSD mem functions are macros to the "real" mem* functions
  * Did I mentioned, I love BSD? :)
  */
-#define bzero(mem, n)		memset ((mem), 0, (n))
+#define bzero(mem, n)		memset ((void *) (mem), 0, (n))
 #define bzerol(mem, n)		memsetl ((mem), 0L, (n))
 
-#define bcopy(src, dest, n)	memmove ((dest), (src), (n))
-#define bcopyl(src, dest, n)	memmovel ((dest), (src), (n))
+#define bcopy(src, dest, n)	memmove ((void *) (dest), (const void *) (src), (n))
+#define bcopyl(src, dest, n)	memmovel ((void *) (dest), (const void *) (src), (n))
 
 
 /*

@@ -136,6 +136,13 @@ pg_dir:
 .org	0x2000
 
 
+.global	kstack
+kstack:
+
+
+.org	0x3000
+
+
 /*
  * The global Descriptor Table
  */
@@ -206,7 +213,7 @@ dummyirq_msg:
 
 
 .align	2
-.global	do_timer, ret_from_sched
+.global	do_timer
 do_timer:
 	cld
 	push	%gs
@@ -224,7 +231,6 @@ do_timer:
 	movw	%ax, %ds
 	movw	%ax, %es
 	call	schedule
-ret_from_sched:
 	movb	$0x20, %al
 	outb	%al, $0xa0
 	outb	%al, $0x20
@@ -239,5 +245,43 @@ ret_from_sched:
 	pop	%es
 	pop	%fs
 	pop	%gs
+	iret
+
+
+.align	2
+.global	do_fork, ret_from_fork
+do_fork:
+	cld
+	pushl	%gs
+	pushl	%fs
+	pushl	%es
+	pushl	%ds
+	pushl	%eax
+	pushl	%ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	movl	$KERNEL_DS, %eax
+	movw	%ax, %ds
+	movw	%ax, %es
+	call	syscall_fork
+	movl	%eax, 0x18(%esp)
+ret_from_fork:
+	movb	$0x20, %al
+	outb	%al, $0xa0
+	outb	%al, $0x20
+	popl	%ebx
+	popl	%ecx
+	popl	%edx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	popl	%eax
+	popl	%ds
+	popl	%es
+	popl	%fs
+	popl	%gs
 	iret
 

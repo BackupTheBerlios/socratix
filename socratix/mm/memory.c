@@ -28,8 +28,8 @@
 #include <asm/system.h>
 
 
-/* The initial kernel stack */
-unsigned long kstack[PAGE_SIZE >> 2];
+/* The initial kernel stack (in head.S) */
+extern unsigned long kstack[PAGE_SIZE >> 2];
 
 /*
  * The description needed to load the kernel stack trough lss
