@@ -49,7 +49,7 @@ extern void init_cpu (void);
 int fork (void)
 {
 	int res;
-	asm volatile ("int $0x80" : "=a" (res) : "a" (1) );
+	asm volatile ("int $0x80" : "=a" (res));
 	return res;
 }
 

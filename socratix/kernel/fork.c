@@ -97,8 +97,10 @@ volatile int syscall_fork (struct reg_struct regs)
 	cli ();
 
 	/* allocate memory for the new process */
-	if ((new = kmalloc (sizeof (Task), 0)) == NULL)
+	if ((new = kmalloc (sizeof (Task), 0)) == NULL) {
+		write_flags (eflags);
 		return -ENOMEM;
+	}
 
 	*new = *current;
 
