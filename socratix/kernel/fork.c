@@ -135,7 +135,7 @@ error:		kfree (new);
 	set_tss (new);
 
 	/* add new task to the task list */
-	new->next = current;
+	new->next = current->next;
 	current->next = new;
 
 	write_flags (eflags);

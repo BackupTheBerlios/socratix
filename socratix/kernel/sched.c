@@ -130,8 +130,6 @@ void schedule (void)
 	next = current->next;
 
 	if (next != current) {
-/*		set_tss (next);*/
-
 		current = next;
 
 		/* do long jump to TSS of the new task */
