@@ -44,10 +44,10 @@ unsigned long ram_size;
 /* memory map */
 struct mem_list {
 	struct mem_list *next;
-	unsigned long id;	/* if set to 0xAA55AA55, this page is really free */
+	unsigned long state;	/* if set to MEMBLK_FREE, this page is really free */
 } *mem_map = NULL;
 
-#define MEMBLK_FREE_ID	0xAA55AA55
+#define MEMBLK_FREE	0xAA55AA55
 
 
 
@@ -153,13 +153,15 @@ void init_paging (void)
 
 		tmp = (struct mem_list *) (n << PAGE_SHIFT);
 		tmp->next = mem_map;
-		tmp->id = MEMBLK_FREE_ID;
+		tmp->state = MEMBLK_FREE;
 		mem_map = tmp;
 	}
 
 
+	/* Ok, that was hard work, now we can hopefully enable paging */
 	write_cr3 (page_dir);
-	enable_paging ();
+	write_cr0 (read_cr0 () | 0x80000000);
+	invalidate ();
 }
 
 
@@ -170,21 +172,35 @@ unsigned long get_free_page (void)
 
 	eflags = read_flags ();
 
-	if ((ptr = mem_map) == NULL) {
-		printk ("get_free_page: Not enough physical memory\n");
-		write_flags (eflags);
-		return 0L;
+	if ((ptr = mem_map) != NULL) {
+		mem_map = ptr->next;
+
+		/* check if page is really free */
+		if (ptr->state == MEMBLK_FREE) {
+			/* clear the page */
+			bzerol (ptr, 1024);
+			write_flags (eflags);
+
+			return (unsigned long) ptr;
+		}
+
+		/*
+		 * mem block is on free list, but isn't marked as
+		 * free. This could mean, that someone messed up with
+		 * mm or that your installed system RAM is damaged.
+		 */
+		panic ("get_free_page: Got an entry from the free mem block list, "
+			"which isn't really free. This means, that someone messed "
+			"up with memory management or that your installed system "
+			"RAM is broken. In each case we couldn't continue well, "
+			"so we'll give up!");
+
 	}
 
-	mem_map = ptr->next;
-
-	/*
-	 * chec
-
-	/* clear the page */
-	bzerol (ptr, 1024);
-
-	return (unsigned long) ptr;
+	/* no phys. mem left */
+	printk ("get_free_page: Not enough physical memory\n");
+	write_flags (eflags);
+	return 0L;
 }
 
 
@@ -200,14 +216,15 @@ void free_page (unsigned long addr)
 	page_table = (unsigned long *) PAGE_ADDR (page_dir[addr >> (PAGE_SHIFT + 10)]);
 	if (!page_table) {
 		printk ("free_page: trying to free page %X, which is located "
-			"in a not present page table\n", addr);
+			"in a not present page table\n", PAGE_ADDR (addr));
 		write_flags (eflags);
 		return;
 	}
 
 	/* check if page is present */
 	if (!(page_table[(addr >> PAGE_SHIFT) & 0x3FF] & PAGE_PRESENT)) {
-		printk ("free_page: trying to free not present page %X\n", addr);
+		printk ("free_page: trying to free not present page %X\n",
+				PAGE_ADDR (addr));
 		write_flags (eflags);
 		return;
 	}
@@ -215,15 +232,15 @@ void free_page (unsigned long addr)
 	mem = (struct mem_list *) PAGE_ADDR (addr);
 
 	/* check if page was not already free */
-	if (mem->id == MEMBLK_FREE_ID) {
-		printk ("free_page: trying to free already freed page %X\n", addr);
+	if (mem->state == MEMBLK_FREE) {
+		printk ("free_page: trying to free already freed page %X\n", mem);
 		write_flags (eflags);
 		return;
 	}
 
 	/* add mem to free memory list */
 	mem->next = mem_map;
-	mem->id = MEMBLK_FREE_ID;
+	mem->state = MEMBLK_FREE;
 	mem_map = mem;
 
 	write_flags (eflags);

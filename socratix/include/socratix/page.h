@@ -30,20 +30,13 @@
 #include <asm/page.h>
 
 
-/* align to the next page border */
-#define PAGE_ALIGN(a)	((((unsigned long) (a) + (PAGE_SIZE - 1L)) \
-			  >> PAGE_SHIFT) << PAGE_SHIFT)
-
-
 /* get the addr of a page */
-#define PAGE_MASK	0xFFFFF000
-#define PAGE_ADDR(a)	((a) & PAGE_MASK)
+#define PAGE_MASK	(~(PAGE_SIZE - 1))
+#define PAGE_ADDR(ptr)	((ptr) & PAGE_MASK)
 
 
-/* */
-#define PAGE_TO_PHYS(a)	\
-	PAGE_ADDR (*((unsigned long *) PAGE_ADDR (page_dir[(a) >> (PAGE_SHIFT + 10)])))
-
+/* align to the next page boundary */
+#define PAGE_ALIGN(ptr)	(((unsigned long) (ptr) + (PAGE_SIZE - 1)) & PAGE_MASK)
 
 
 #endif /* __SOCRATIX_PAGE_H */

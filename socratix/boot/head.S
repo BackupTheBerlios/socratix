@@ -135,15 +135,6 @@ pg_dir:
 
 .org	0x2000
 
-#if 0
-.global	pg_tab0
-pg_tab0:
-	.fill	PAGE_SIZE, 1, 0x0
-
-
-.org	0x3000
-#endif
-
 
 /*
  * The global Descriptor Table

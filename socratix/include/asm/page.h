@@ -28,8 +28,8 @@
 
 
 /* page size and page shift */
-#define	PAGE_SIZE	(4 * 1024)	/* 4K */
-#define	PAGE_SHIFT	(12L)
+#define	PAGE_SHIFT	(12)
+#define PAGE_SIZE	(1 << PAGE_SHIFT)
 
 
 /* page flags */
