@@ -32,6 +32,7 @@ extern void init_paging (void);
 extern void init_idt (void);
 
 
+extern unsigned long __get_free_page (void);
 extern unsigned long get_free_page (void);
 extern void free_page (unsigned long);
 extern void print_mem (void);
@@ -54,7 +55,7 @@ void start_kernel (void)
 		printk ("get memory at %X\n", mem);
 
 		for (i = 0; i < 1024; i++) {
-			if ((mem[i] = get_free_page ()) == 0)
+			if ((mem[i] = __get_free_page ()) == 0)
 				break;
 		}
 	}
@@ -67,27 +68,10 @@ void start_kernel (void)
 		free_page (mem[i]);
 
 	free_page (mem);
-	free_page (mem);
 
 	print_mem ();
 
 
-#if 0
-	print_mem ();
-
-	cli ();
-	mem = (unsigned long *) get_free_page ();
-	sti ();
-
-	printk ("got a page at %X\n", mem);
-
-	cli (); free_page (mem); sti ();
-	cli (); free_page (mem); sti ();
-
-	mem[10] = 0;
-
-	print_mem ();
-#endif
 	for (;;) {hlt ();}
 }
 

@@ -29,10 +29,9 @@
 #include <asm/system.h>
 
 
-extern unsigned long pg_dir, pg_tab0, _end;
+extern unsigned long pg_dir, _end;
 
 #define page_dir	((unsigned long *) &pg_dir)
-#define page_table0	((unsigned long *) &pg_tab0)
 
 #define kernel_size	((unsigned long) &_end)
 
@@ -42,24 +41,12 @@ unsigned long ram_size;
 
 
 /* memory map */
-struct mem_list {
-	struct mem_list *next;
-	unsigned long state;	/* if set to MEMBLK_FREE, this page is really free */
+struct mem_blk {
+	struct mem_blk *next;
+	unsigned long state;	/* if set to MEMBLK_FREE, this page is really free (only for debugging, will be removed, when mm tests are completed :)) */
 } *mem_map = NULL;
 
 #define MEMBLK_FREE	0xAA55AA55
-
-
-
-#define enable_paging() \
-{ \
-	write_cr0 (read_cr0 () | 0x80000000); invalidate (); \
-}
-
-#define disable_paging() \
-{ \
-	write_cr0 (read_cr0 () & ~0x80000000); invalidate (); \
-}
 
 
 
@@ -144,14 +131,14 @@ void init_paging (void)
 	 * between 0x9f000 - 0x100000.
 	 */
 	for (n = kpages; n < (PAGE_ALIGN (ram_size) >> PAGE_SHIFT); n++) {
-		struct mem_list *tmp;
+		struct mem_blk *tmp;
 
 		if (n >= 0x9F && n < 0x100) {
 			/* skip the reserved memory */
 			continue;
 		}
 
-		tmp = (struct mem_list *) (n << PAGE_SHIFT);
+		tmp = (struct mem_blk *) (n << PAGE_SHIFT);
 		tmp->next = mem_map;
 		tmp->state = MEMBLK_FREE;
 		mem_map = tmp;
@@ -165,20 +152,20 @@ void init_paging (void)
 }
 
 
-unsigned long get_free_page (void)
+unsigned long __get_free_page (void)
 {
 	unsigned long eflags;
-	struct mem_list *ptr;
+	struct mem_blk *ptr;
 
 	eflags = read_flags ();
+	cli ();
 
 	if ((ptr = mem_map) != NULL) {
 		mem_map = ptr->next;
 
 		/* check if page is really free */
 		if (ptr->state == MEMBLK_FREE) {
-			/* clear the page */
-			bzerol (ptr, 1024);
+			ptr->state = 0;
 			write_flags (eflags);
 
 			return (unsigned long) ptr;
@@ -204,52 +191,60 @@ unsigned long get_free_page (void)
 }
 
 
+unsigned long get_free_page (void)
+{
+	unsigned long addr;
+
+	if ((addr = __get_free_page ()) != 0L) {
+		/* clear the page */
+		bzerol (addr, 1024);
+	}
+
+	return addr;
+}
+
+
 void free_page (unsigned long addr)
 {
 	unsigned long *page_table;
 	unsigned long eflags;
-	struct mem_list *mem;
+	struct mem_blk *ptr;
 
 	eflags = read_flags ();
+	cli ();
 
-	/* look up the page table addr in the kernel page directory */
-	page_table = (unsigned long *) PAGE_ADDR (page_dir[addr >> (PAGE_SHIFT + 10)]);
-	if (!page_table) {
-		printk ("free_page: trying to free page %X, which is located "
-			"in a not present page table\n", PAGE_ADDR (addr));
-		write_flags (eflags);
-		return;
+	/*
+	 * lookup the page table addr in the kernel page directory and
+	 * check if page is present
+	 */
+	if ((page_table = (unsigned long *) PAGE_ADDR (page_dir[addr >> (PAGE_SHIFT + 10)])) != NULL
+	&& (page_table[(addr >> PAGE_SHIFT) & 0x3FF] & PAGE_PRESENT) != 0) {
+		ptr = (struct mem_blk *) PAGE_ADDR (addr);
+
+		/* check if page wasn't already freed */
+		if (ptr->state != MEMBLK_FREE) {
+			ptr->next = mem_map;
+			ptr->state = MEMBLK_FREE;
+			mem_map = ptr;
+
+end:			write_flags (eflags);
+			return;
+		}
+
+		/* page was already free, some messed up in mm */
+		printk ("free_page: trying to free already free page %08X\n", ptr);
+		goto end;
 	}
 
-	/* check if page is present */
-	if (!(page_table[(addr >> PAGE_SHIFT) & 0x3FF] & PAGE_PRESENT)) {
-		printk ("free_page: trying to free not present page %X\n",
-				PAGE_ADDR (addr));
-		write_flags (eflags);
-		return;
-	}
-
-	mem = (struct mem_list *) PAGE_ADDR (addr);
-
-	/* check if page was not already free */
-	if (mem->state == MEMBLK_FREE) {
-		printk ("free_page: trying to free already freed page %X\n", mem);
-		write_flags (eflags);
-		return;
-	}
-
-	/* add mem to free memory list */
-	mem->next = mem_map;
-	mem->state = MEMBLK_FREE;
-	mem_map = mem;
-
-	write_flags (eflags);
+	/* we're trying to free a not present page */
+	printk ("free_page: trying to free not present page %08X\n", PAGE_ADDR (addr));
+	goto end;
 }
 
 
 void print_mem (void)
 {
-	struct mem_list *ptr;
+	struct mem_blk *ptr;
 	unsigned free = 0;
 
 	for (ptr = mem_map; ptr != NULL; ptr = ptr->next) {
