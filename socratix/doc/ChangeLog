@@ -1,11 +1,8 @@
-Stefan Pflueger, 2001-06-01:
-	- Documentation updated
+Benedikt Meurer, 2001-06-15:
+	- Paging seems finally to work well now for the kernel (hopefully)
+	- New boot and setup mechanism, we'll try to be compliant to lilo
+	  but there are lot of work to do
 
-Benedikt Meurer, 2001-06-01:
+Stefan Pflueger, 2001-06-15:
 	- Documentation updated
-	- Design a new concept for the paging
-
-Benedikt Meurer, 2001-05-31:
-	- fixed the bootloader and remove the obsolete kernelloader, booting of
-	  the OS is now faster and simpler.
 
