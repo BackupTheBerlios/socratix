@@ -38,7 +38,6 @@
 #define PAGE_USER	(1 << 2)
 #define PAGE_ACCESSED	(1 << 5)
 #define PAGE_DIRTY	(1 << 6)
-#define PAGE_USED	(1 << 9)	/* avl. bit: 0 = page free, 1 = page used */
 
 
 #endif /* __ASM_PAGE_H */

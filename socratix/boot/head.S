@@ -122,7 +122,10 @@ _start32:
 
 
 /*
- * page directory and first page table (both 4K)
+ * the kernel page directory
+ *
+ * NOTE: kernel page tables gets allocated dynamically by init_paging
+ * directly after the kernel heap.
  */
 .org	0x1000
 .global	pg_dir
@@ -131,12 +134,15 @@ pg_dir:
 
 
 .org	0x2000
+
+#if 0
 .global	pg_tab0
 pg_tab0:
 	.fill	PAGE_SIZE, 1, 0x0
 
 
 .org	0x3000
+#endif
 
 
 /*

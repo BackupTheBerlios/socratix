@@ -23,7 +23,7 @@
 
 
 CC	= gcc
-CPP	= cpp -I../include
+CPP	= gcc -E -I../include # cpp
 LINKER	= ld
 CFLAGS	= -c -traditional -nostdinc -O2 -I../include
 LDFLAGS	= -Ttext 0x0 -s --oformat binary -nostdlib

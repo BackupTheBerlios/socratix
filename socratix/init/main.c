@@ -42,18 +42,36 @@ void start_kernel (void)
 	unsigned int i;
 	unsigned long *mem;
 
-	tty_init (0x9F000);
-
 	init_paging ();
+
+	tty_init (0x9F000);
 
 	enable_irqs ();
 
+	print_mem ();
+
 	if ((mem = (unsigned long *) get_free_page ()) != 0L) {
 		printk ("get memory at %X\n", mem);
-		free_page (mem);
+
+		for (i = 0; i < 1024; i++) {
+			if ((mem[i] = get_free_page ()) == 0)
+				break;
+		}
 	}
 
+	printk ("allocated %d pages (%d KB)\n", i + 1, (i + 1) * 4);
+
 	print_mem ();
+
+	for (i = 0; i < 1024; i++)
+		free_page (mem[i]);
+
+	free_page (mem);
+	free_page (mem);
+
+	print_mem ();
+
+
 #if 0
 	print_mem ();
 
