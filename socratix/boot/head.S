@@ -127,19 +127,16 @@ _start32:
 .org	0x1000
 .global	pg_dir
 pg_dir:
+	.fill	PAGE_SIZE, 1, 0x0
 
 
 .org	0x2000
 .global	pg_tab0
 pg_tab0:
+	.fill	PAGE_SIZE, 1, 0x0
 
 
 .org	0x3000
-.global	pg_tab1023
-pg_tab1023:
-
-
-.org	0x4000
 
 
 /*

@@ -98,7 +98,7 @@
 #define read_flags() \
 ({ \
 	unsigned long __val; \
-	asm volatile ("pushfl; popl %0" : "=g" (__val) : "memory", "cc"); \
+	asm volatile ("pushfl; popl %0" : "=g" (__val) :: "memory", "cc"); \
 	__val; \
 })
 

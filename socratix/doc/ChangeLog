@@ -1,0 +1,5 @@
+Benedikt Meurer, 2001-06-13:
+	- Completly changed the boot concept
+	- Now, paging finally seems to work well, with a little trick
+	  (see the page_tables_lin description :)
+
