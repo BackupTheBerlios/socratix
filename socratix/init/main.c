@@ -48,17 +48,15 @@ extern void init_cpu (void);
 
 int fork (void)
 {
-	int res;
+	int res asm ("ax");
 	asm volatile ("int $0x80" : "=a" (res));
 	return res;
 }
 
-extern Task *idle_task;
-
 
 void start_kernel (void)
 {
-	unsigned int i;
+	int i;
 	Task *p;
 
 	init_paging ();
@@ -76,11 +74,11 @@ void start_kernel (void)
 	if ((i = fork ()) == 0) {
 		/* child */
 		for (;;) {
-			printk ("child ");
 			for (i = 0; i < 0x200; i++) {
 				unsigned n = i;
 				while (n-- > 0);
 			}
+			printk ("child ");
 		}
 	} else if (i < 0) {
 		/* error */
@@ -104,11 +102,26 @@ void start_kernel (void)
 		printk ("error during fork\n");
 	}
 
-	for (;;) {
-		for (i = 1, p = idle_task->next; p != idle_task; p = p->next)
-			i++;
+	/* ... and again :) */
+	if ((i = fork ()) == 0) {
+		/* next child */
+		for (;;) {
+			for (i = 0; i < 0x100; i++) {
+				unsigned n = i;
+				while (n-- > 0);
+			}
+			printk ("child3 ");
+			for (i = 0; i < 0x100; i++) {
+				unsigned n = i;
+				while (n-- > 0);
+			}
+		}
+	} else if (i < 0) {
+		printk ("error during fork\n");
+	}
 
-		printk ("father (%d) ", i);
+	for (;;) {
+		printk ("father ");
 		for (i = 0; i < 0x200; i++) {
 			unsigned n = i;
 			while (n-- > 0);

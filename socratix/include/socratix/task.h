@@ -74,13 +74,11 @@ struct reg_struct {
 	unsigned long	eax;
 	unsigned short	ds, __unused0;
 	unsigned short	es, __unused1;
-	unsigned short	fs, __unused2;
-	unsigned short	gs, __unused3;
 	unsigned long	eip;
-	unsigned short	cs, __unused4;
+	unsigned short	cs, __unused2;
 	unsigned long	eflags;
 	unsigned long	esp;
-	unsigned short	ss, __unused5;
+	unsigned short	ss, __unused3;
 };
 
 

@@ -155,11 +155,12 @@ gdt:
 	.quad	0x0000000000000000	/* TSS1 */
 	.quad	0x0000000000000000	/* TSS2 */
 	.quad	0x0000000000000000	/* TSS3 */
+	.quad	0x0000000000000000	/* TSS4 */
 
 
 .word	0
 gdt_description:
-	.word	(6 * 8) - 1		/* contains 4 entries */
+	.word	(7 * 8) - 1		/* contains 4 entries */
 	.long	gdt
 
 
@@ -177,6 +178,38 @@ idt_description:
 	.long	idt
 
 
+
+#define PUSH_REGS \
+	cld; \
+	pushl	%es;  \
+	pushl	%ds;  \
+	pushl	%eax; \
+	pushl	%ebp; \
+	pushl	%edi; \
+	pushl	%esi; \
+	pushl	%edx; \
+	pushl	%ecx; \
+	pushl	%ebx; \
+	movl	$KERNEL_DS, %edx; \
+	movl	%edx, %ds; \
+	movl	%edx, %es;
+
+
+#define POP_REGS \
+	movb	$0x20, %al; \
+	outb	%al, $0xa0; \
+	outb	%al, $0x20; \
+	popl	%ebx; \
+	popl	%ecx; \
+	popl	%edx; \
+	popl	%esi; \
+	popl	%edi; \
+	popl	%ebp; \
+	popl	%eax; \
+	popl	%ds;  \
+	popl	%es;
+
+
 /*
  * the default interrupt "handler"
  * written by Volker. Seems to work good,
@@ -184,29 +217,12 @@ idt_description:
  */
 .align	2
 .global	dummy_irq
-dummy_irq:	
-	cld
-	pushl	%eax
-	pushl	%ecx
-	pushl	%edx
-	pushw	%es
-	pushw	%ds
-	movl	$KERNEL_DS, %eax
-	movw	%ax, %ds
-	movw	%ax, %es
-#if 0
-	pushl	$dummyirq_msg
+dummy_irq:
+	PUSH_REGS
+	pushl	dummyirq_msg
 	call	printk
 	popl	%eax
-#endif
-	movb	$0x20, %al
-	outb	%al, $0xa0
-	outb	%al, $0x20
-	popw	%ds
-	popw	%es
-	popl	%edx
-	popl	%ecx
-	popl	%eax
+	POP_REGS
 	iret
 
 
@@ -217,73 +233,21 @@ dummyirq_msg:
 .align	2
 .global	do_timer
 do_timer:
-	cld
-	push	%gs
-	push	%fs
-	push	%es
-	push	%ds
-	pushl	%eax
-	pushl	%ebp
-	pushl	%edi
-	pushl	%esi
-	pushl	%edx
-	pushl	%ecx
-	pushl	%ebx
-	movl	$KERNEL_DS, %eax
-	movw	%ax, %ds
-	movw	%ax, %es
+	PUSH_REGS
 	call	schedule
-	movb	$0x20, %al
-	outb	%al, $0xa0
-	outb	%al, $0x20
-	popl	%ebx
-	popl	%ecx
-	popl	%edx
-	popl	%esi
-	popl	%edi
-	popl	%ebp
-	popl	%eax
-	pop	%ds
-	pop	%es
-	pop	%fs
-	pop	%gs
+	POP_REGS
 	iret
 
 
 .align	2
 .global	do_fork, ret_from_fork
 do_fork:
-	cld
-	pushl	%gs
-	pushl	%fs
-	pushl	%es
-	pushl	%ds
-	pushl	%eax
-	pushl	%ebp
-	pushl	%edi
-	pushl	%esi
-	pushl	%edx
-	pushl	%ecx
-	pushl	%ebx
-	movl	$KERNEL_DS, %eax
-	movw	%ax, %ds
-	movw	%ax, %es
+	PUSH_REGS
 	call	syscall_fork
 	movl	%eax, 0x18(%esp)
 ret_from_fork:
-	movb	$0x20, %al
-	outb	%al, $0xa0
-	outb	%al, $0x20
-	popl	%ebx
-	popl	%ecx
-	popl	%edx
-	popl	%esi
-	popl	%edi
-	popl	%ebp
-	popl	%eax
-	popl	%ds
-	popl	%es
-	popl	%fs
-	popl	%gs
+	POP_REGS
 	iret
+
+
 

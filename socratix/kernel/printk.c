@@ -25,18 +25,25 @@
 
 #include <socratix/vsprintf.h>
 #include <socratix/tty.h>
+#include <asm/system.h>
 #include <asm/string.h>
 
 
 void printk (const char *fmt, ...)
 {
+	unsigned long eflags;
 	static char buffer[1024];
 	va_list args;
+
+	eflags = read_flags ();
+	cli ();
 
 	args = va_start (args, fmt);
 	vsprintf (buffer, fmt, args);
 	va_end (args);
 
 	tty_write (0, buffer, strlen (buffer));
+
+	write_flags (eflags);
 }
 
