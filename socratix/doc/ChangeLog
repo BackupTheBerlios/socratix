@@ -1,5 +1,11 @@
-Benedikt Meurer, 2001-06-13:
-	- Completly changed the boot concept
-	- Now, paging finally seems to work well, with a little trick
-	  (see the page_tables_lin description :)
+Stefan Pflueger, 2001-06-01:
+	- Documentation updated
+
+Benedikt Meurer, 2001-06-01:
+	- Documentation updated
+	- Design a new concept for the paging
+
+Benedikt Meurer, 2001-05-31:
+	- fixed the bootloader and remove the obsolete kernelloader, booting of
+	  the OS is now faster and simpler.
 

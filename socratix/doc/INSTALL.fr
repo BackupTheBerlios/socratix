@@ -1,0 +1,13 @@
+Installation de Socratix 
+=====================
+
+En premier lieu, t‚l‚chargez le tar Socratix et l'extrayez-le. Rendez-vous
+dans le repertoire cr‚‚. Faites un "make" pour compiler les fichiers sources.
+Inserez une disquette 1.44 dans /dev/fd0 (a:), ‚videment, toutes donn‚es de ce
+disque seront perdues!!! Tappez "make install" pour ‚crire sur la disquette de boot
+de Socratix dans /dev/fd0. 
+Vous avez d‚sormais un disque de boot Socratix. Red‚marrez votre pc, changez
+dans le bios l'ordre de d‚marrage pour booter d'abord sur le lecteur de disquette,
+puis inserez la disquette pour booter. Socratix devrait alors se lancer.
+
+Veuillez nous soumettre vos rapports de bugs sur la page d'accueil de Socratix. Merci.

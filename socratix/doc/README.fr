@@ -1,0 +1,8 @@
+Ceci est une version pre-alpha de Socratix!
+Nous, l'‚quipe de d‚veloppement de Socratix ne pourront ˆtre tenus comme responsable
+des dommages ‚ventuels caus‚s par Socratix ou affili‚
+A n'utiliser qu'… votre propre risque!!
+Socratix est open source, veuillez lire la Gnu General Public License (GPL) 
+dans le fichier COPYING que vous devrez avoir re‡u avec Socratix. 
+Les instructions d'installation sont dans le fichier INSTALL.
+

@@ -1,0 +1,14 @@
+Socratix-Installation
+=====================
+
+Laden Sie zuerst den Socratix-Tarball herunter und entpacken Sie ihn. Wechseln
+Sie in das erstellte Verzeichnis. Geben Sie dort "make" ein, um die
+Quellcodes zu kompilieren. Legen Sie eine 1.44MB-Diskette in /dev/fd0 (A:), 
+alle Daten auf dieser Diskette gehen im folgenden verloren!!! Geben Sie 
+"make install" ein um die Socratix-Bootdisk in Laufwerk /dev/fd0 zu schreiben.
+Nun haben Sie eine Socratix-Bootdisk. Starten Sie den Computer neu, stellen Sie
+die Bootreihenfolge im Bios auf Laufwerk A: und schieben Sie die Socratix-Disk
+in dieses Laufwerk. Socratix sollte nun starten.
+
+Bitte berichten Sie uns Fehler in Socratix ueber die Homepage. Vielen Dank.
+

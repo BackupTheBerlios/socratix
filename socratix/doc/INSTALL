@@ -1,0 +1,14 @@
+Socratix Installation
+=====================
+
+First, download the Socratix tarball and extract it. Now change into
+the generated directory. There type "make" to compile the source files.
+Put an 1.44meg disk into /dev/fd0 (A:), all data on this disk
+will be lost!!! Type "make install" to write the Socratix bootdisk to
+/dev/fd0. 
+Now you have a bootable Socratix disk. Restart your computer, change the
+boot order in the bios to look first at drive a: and put the Socratix
+disk into this drive. Now Socratix should start.
+
+Please report bugs to us on the Socratix homepage. Thanks.
+
