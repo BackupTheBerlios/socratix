@@ -118,7 +118,7 @@ void init_paging (void)
 			}
 
 			if (addr == (unsigned) &kstack[0]) {
-				/* stack is private */
+				/* kernel stack is private */
 				page_table[t] = PAGE_PRIVATE | addr;
 			} else {
 				/* we can share the page */

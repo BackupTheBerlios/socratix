@@ -24,6 +24,7 @@
 
 
 #include <socratix/printk.h>
+#include <socratix/task.h>
 #include <socratix/tty.h>
 #include <asm/system.h>
 
@@ -52,10 +53,13 @@ int fork (void)
 	return res;
 }
 
+extern Task *idle_task;
+
 
 void start_kernel (void)
 {
 	unsigned int i;
+	Task *p;
 
 	init_paging ();
 
@@ -81,37 +85,36 @@ void start_kernel (void)
 	} else if (i < 0) {
 		/* error */
 		printk ("error during fork!\n");
-	} else {
-		/* father */
+
+	}
+
+	/* father */
+
+	/* we fork again :) */
+	if ((i = fork ()) == 0) {
+		/* next child */
 		for (;;) {
-			printk ("father ");
+			printk ("child2 ");
 			for (i = 0; i < 0x200; i++) {
 				unsigned n = i;
 				while (n-- > 0);
 			}
 		}
+	} else if (i < 0) {
+		printk ("error during fork\n");
 	}
-#if 0
+
 	for (;;) {
-		char *mem;
+		for (i = 1, p = idle_task->next; p != idle_task; p = p->next)
+			i++;
 
-		if ((mem = kmalloc (2, 0)) == NULL) {
-			printk ("Unable to get 2 bytes of memory\n");
-			continue;
-		}
-
-		mem[0] = 'a';
-		mem[1] = '\0';
-
-		printk (mem);
-		for (i = 0; i < 0x220; i++) {
+		printk ("father (%d) ", i);
+		for (i = 0; i < 0x200; i++) {
 			unsigned n = i;
 			while (n-- > 0);
 		}
-
-		kfree (mem);
 	}
-#endif
+
 	for (;;) {}
 }
 

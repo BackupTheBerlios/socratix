@@ -113,7 +113,7 @@ extern inline void *memmovel (void *dest, const void *src, size_t n)
  * Did I mentioned, I love BSD? :)
  */
 #define bzero(mem, n)		memset ((void *) (mem), 0, (n))
-#define bzerol(mem, n)		memsetl ((mem), 0L, (n))
+#define bzerol(mem, n)		memsetl ((void *) (mem), 0L, (n))
 
 #define bcopy(src, dest, n)	memmove ((void *) (dest), (const void *) (src), (n))
 #define bcopyl(src, dest, n)	memmovel ((void *) (dest), (const void *) (src), (n))

@@ -152,12 +152,14 @@ gdt:
 	.quad	0x0000000000000000	/* null */
 	.quad	0x00CF9A000000FFFF	/* code (KERNEL_CS) */
 	.quad	0x00CF92000000FFFF	/* data (KERNEL_DS) */
-	.quad	0x0000000000000000	/* temp */
-	.quad	0x0000000000000000	/* temp */
+	.quad	0x0000000000000000	/* TSS1 */
+	.quad	0x0000000000000000	/* TSS2 */
+	.quad	0x0000000000000000	/* TSS3 */
+
 
 .word	0
 gdt_description:
-	.word	(5 * 8) - 1		/* contains 4 entries */
+	.word	(6 * 8) - 1		/* contains 4 entries */
 	.long	gdt
 
 

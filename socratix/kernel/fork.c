@@ -86,7 +86,6 @@ static int copy_page_tables (Task *from, Task *to)
 
 extern void set_tss (Task *);
 
-
 volatile int syscall_fork (struct reg_struct regs)
 {
 	extern void ret_from_fork (void);
@@ -94,12 +93,12 @@ volatile int syscall_fork (struct reg_struct regs)
 	unsigned long eflags;
 	Task *new;
 
+	eflags = read_flags ();
+	cli ();
+
 	/* allocate memory for the new process */
 	if ((new = kmalloc (sizeof (Task), 0)) == NULL)
 		return -ENOMEM;
-
-	eflags = read_flags ();
-	cli ();
 
 	*new = *current;
 
@@ -126,9 +125,6 @@ error:		kfree (new);
 	new->tss.ss0	= KERNEL_DS;
 	new->tss.link	= 0;
 	new->tss.eflags	= regs.eflags & 0xFFFFCFFF;	/* IOPL 0 for new process */
-	new->tss.tr	= 0x20;
-
-	set_tss (new);
 
 	childregs = ((struct reg_struct *) &new->kernel_stack[PAGE_SIZE >> 2]) - 1;
 	*childregs = regs;
@@ -136,9 +132,11 @@ error:		kfree (new);
 	new->tss.esp = (unsigned long) childregs;
 	new->tss.eip = (unsigned long) ret_from_fork;
 
+	set_tss (new);
+
 	/* add new task to the task list */
-	new->next = idle_task;
-	idle_task->next = new;
+	new->next = current;
+	current->next = new;
 
 	write_flags (eflags);
 

@@ -56,16 +56,21 @@ extern unsigned long pg_dir, gdt;
 #define GDT(n)		(((unsigned char *) &gdt) + n)
 
 
+unsigned next_free_tss = 0x18;
+
 void set_tss (Task *tsk)
 {
-	struct segment_descriptor_struct *segment = (void *) GDT(tsk->tss.tr);
+	struct segment_descriptor_struct *segment = (void *) GDT(next_free_tss);
 
+	tsk->tss.tr = next_free_tss;
 	segment->limit_0_15 = sizeof (tsk->tss);
 	segment->basis_0_15 = ((unsigned long) &(tsk->tss)) & 0xFFFF;
 	segment->basis_16_23 = (((unsigned long) &(tsk->tss)) >> 16) & 0xFF;
 	segment->flags = 0x89;
 	segment->access_limit_16_19 = 0x0;
 	segment->basis_24_31 = (((unsigned long) &(tsk->tss)) >> 24) & 0xFF;
+
+	next_free_tss += 0x08;
 }
 
 
@@ -100,7 +105,6 @@ void init_sched (void)
 	idle_task->tss.ds	= KERNEL_DS;
 	idle_task->tss.fs	= KERNEL_DS;
 	idle_task->tss.gs	= KERNEL_DS;
-	idle_task->tss.tr	= 0x18;
 
 	current = idle_task;
 	set_tss (idle_task);
