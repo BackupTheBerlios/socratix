@@ -32,7 +32,6 @@
 extern unsigned long pg_dir, _end;
 
 #define page_dir	((unsigned long *) &pg_dir)
-
 #define kernel_size	((unsigned long) &_end)
 
 
@@ -52,6 +51,20 @@ struct mem_blk {
 
 extern unsigned long count_ram (void);
 
+
+
+void copy_page_tables (unsigned long *from, unsigned long *to)
+{
+	unsigned long n;
+
+	/*
+	 * the first 4MB of memory are shared between all prozesses,
+	 * this is the kernel memory
+	 */
+
+	for (n = 0; n < 1024; n++)
+		to[n] = from[n];
+}
 
 
 void init_paging (void)
@@ -197,7 +210,7 @@ unsigned long get_free_page (void)
 
 	if ((addr = __get_free_page ()) != 0L) {
 		/* clear the page */
-		bzerol (addr, 1024);
+		bzerol (addr, PAGE_SIZE >> 2);
 	}
 
 	return addr;

@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  *  Authors:	Benedikt Meurer <bmeurer@fwdn.de>
+ *		Volker Stroebel <mmv1@linux4us.de>
  *
  *  Copyright (c) 2001 Socratix Development Team
  *
@@ -23,18 +24,16 @@
  */
 
 
-#ifndef __SOCRATIX_UNISTD_H
-#define __SOCRATIX_UNISTD_H
+#ifndef __SOCRATIX_IRQ_H
+#define __SOCRATIX_IRQ_H
 
 
-#ifndef NULL
-#define NULL	((void *) 0L)
-#endif
+/* registers an interrupt handler in the IDT */
+void register_interrupt (unsigned, void (*fn) (void));
+
+/* deletes the handler for an IRQ in the IDT */
+void unregister_interrupt (unsigned);
 
 
-typedef	unsigned long	size_t;
-typedef signed long	ssize_t;
-
-
-#endif /* __SOCRATIX_UNISTD_H */
+#endif /* __SOCRATIX_IRQ_H */
 

@@ -1,6 +1,7 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*-
  *
  *  Authors:	Benedikt Meurer <bmeurer@fwdn.de>
+ *		Volker Stroebel <mmv1@linux4us.de>
  *
  *  Copyright (c) 2001 Socratix Development Team
  *
@@ -23,61 +24,48 @@
  */
 
 
-#include <socratix/printk.h>
-#include <socratix/tty.h>
+#include <asm/segment.h>
 #include <asm/system.h>
-
-#include <socratix/kmalloc.h>
-
-
-extern void init_sched (void);
-
-extern void init_paging (void);
-extern void init_idt (void);
+#include <asm/irq.h>
 
 
-extern unsigned long __get_free_page (void);
-extern unsigned long get_free_page (void);
-extern void free_page (unsigned long);
-extern void print_mem (void);
+/* struct for one entry in the IDT */
+struct irq_struct {
+	unsigned short	offset0_15;
+	unsigned short	selector;
+	unsigned char	unused;
+	unsigned char	flags;
+	unsigned short	offset16_31;
+};
 
 
-extern void init_cpu (void);
 
-void start_kernel (void)
+/* The IDT (from head.s) */
+extern unsigned char idt;
+
+#define IDT(n)	((struct irq_struct *) ((unsigned char *) &idt + (n << 3)))
+
+
+/* register an irq handler for an irq */
+void register_interrupt (unsigned num, void (*fn) (void))
 {
-	unsigned int i;
+	struct irq_struct *entry = IDT (num);
 
-	init_paging ();
-
-	tty_init (0x9F000);
-
-	init_cpu ();
-
-	print_mem ();
-
-	init_sched ();
-
-	enable_irqs ();
-
-	for (;;) {
-		char *mem;
-
-		if ((mem = kmalloc (2, 0)) == NULL) {
-			printk ("Unable to get 2 bytes of memory\n");
-			continue;
-		}
-
-		mem[0] = 'a';
-		mem[1] = '\0';
-
-		printk (mem);
-		for (i = 0; i < 0x220; i++) {
-			unsigned n = i;
-			while (n-- > 0);
-		}
-
-		kfree (mem);
-	}
+	entry->offset0_15	= (unsigned) fn & 0xFFFF;
+	entry->selector		= KERNEL_CS;
+	entry->unused		= 0x00;
+	entry->flags		= 0xEE;
+	entry->offset16_31	= (unsigned) fn >> 16L;
 }
+
+
+/* unregister the handler previously registered for the irq */
+void unregister_interrupt (unsigned num)
+{
+	/* the dummy irq handler */
+	extern void dummy_irq (void);
+
+	register_interrupt (num, dummy_irq);
+}
+
 

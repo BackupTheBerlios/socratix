@@ -146,10 +146,11 @@ gdt:
 	.quad	0x00CF9A000000FFFF	/* code (KERNEL_CS) */
 	.quad	0x00CF92000000FFFF	/* data (KERNEL_DS) */
 	.quad	0x0000000000000000	/* temp */
+	.quad	0x0000000000000000	/* temp */
 
 .word	0
 gdt_description:
-	.word	(4 * 8) - 1		/* contains 4 entries */
+	.word	(5 * 8) - 1		/* contains 4 entries */
 	.long	gdt
 
 
@@ -188,11 +189,10 @@ dummy_irq:
 	pushl	$dummyirq_msg
 	call	printk
 	popl	%eax
-
+#endif
 	movb	$0x20, %al
 	outb	%al, $0xa0
 	outb	%al, $0x20
-#endif
 	popw	%ds
 	popw	%es
 	popl	%edx
@@ -203,4 +203,41 @@ dummy_irq:
 
 dummyirq_msg:
 	.asciz	"Unhandled IRQ\n"
+
+
+.align	2
+.global	do_timer, ret_from_sched
+do_timer:
+	cld
+	push	%gs
+	push	%fs
+	push	%es
+	push	%ds
+	pushl	%eax
+	pushl	%ebp
+	pushl	%edi
+	pushl	%esi
+	pushl	%edx
+	pushl	%ecx
+	pushl	%ebx
+	movl	$KERNEL_DS, %eax
+	movw	%ax, %ds
+	movw	%ax, %es
+	call	schedule
+ret_from_sched:
+	movb	$0x20, %al
+	outb	%al, $0xa0
+	outb	%al, $0x20
+	popl	%ebx
+	popl	%ecx
+	popl	%edx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+	popl	%eax
+	pop	%ds
+	pop	%es
+	pop	%fs
+	pop	%gs
+	iret
 

@@ -72,10 +72,7 @@
 
 /* write value to CR0 register */
 #define write_cr0(__val) \
-{ \
-	asm volatile ("movl %0, %%cr0\n\t" :: "r" ((unsigned long) (__val)) \
-			: "memory"); \
-}
+{ asm volatile ("movl %0, %%cr0\n\t" :: "r" ((unsigned long) (__val)) : "memory"); }
 
 
 /* read the value from CR3 register */
@@ -88,10 +85,7 @@
 
 /* write value to CR3 register */
 #define write_cr3(__val) \
-{ \
-	asm volatile ("movl %0, %%cr3\n\t" :: "r" ((unsigned long) (__val)) \
-			: "memory"); \
-}
+{ asm volatile ("movl %0, %%cr3\n\t" :: "r" ((unsigned long) (__val)) : "memory"); }
 
 
 /* read value of eflags register */
@@ -104,10 +98,25 @@
 
 /* write value to eflags register */
 #define write_flags(__val) \
-{ \
-	asm volatile ("pushl %0; popfl" \
-			:: "g" ((unsigned long) (__val)) : "memory", "cc"); \
-}
+{ asm volatile ("pushl %0; popfl" :: "g" ((unsigned long) (__val)) : "memory", "cc"); }
+
+
+/* reads the value from the task register */
+#define read_tr() \
+({ \
+	unsigned long __val; \
+	asm volatile  ("str %%ax" : "=a" (__val) : ); \
+	__val; \
+})
+
+/* write __val to the task register */
+#define write_tr(__val) \
+{ asm volatile ("ltr %%ax" :: "a" (__val)); }
+
+
+/* do a long jump to __addr */
+#define ljmp(__addr) \
+{ asm volatile ("ljmp *%0" :: "m" ((__addr)) : "memory"); }
 
 
 /*

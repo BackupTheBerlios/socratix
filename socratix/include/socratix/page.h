@@ -39,5 +39,11 @@
 #define PAGE_ALIGN(ptr)	(((unsigned long) (ptr) + (PAGE_SIZE - 1)) & PAGE_MASK)
 
 
+/* prototypes */
+extern unsigned long __get_free_page (void);
+extern unsigned long get_free_page (void);
+extern void free_page (unsigned long);
+
+
 #endif /* __SOCRATIX_PAGE_H */
 

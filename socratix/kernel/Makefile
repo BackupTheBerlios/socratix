@@ -23,20 +23,29 @@
 
 CC	= gcc
 LINKER	= ld
-CFLAGS	= -Wall -Wstrict-prototypes -c -O2 -m486 -nostdinc -I../include
+CFLAGS	= -Wall -Wstrict-prototypes -c -O2 -m486 -nostdinc -I../include -fno-builtin
 LDFLAGS	= -m elf_i386 -r
 
-OBJS	= panic.o printk.o tty.o vsprintf.o
+OBJS	= cpu.o irq.o panic.o printk.o sched.o tty.o vsprintf.o
 
 all:	kernel.o
 
 kernel.o: $(OBJS) Makefile
 	$(LINKER) $(LDFLAGS) -o kernel.o $(OBJS)
 
+cpu.o: cpu.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+irq.o: irq.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 panic.o: panic.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 printk.o: printk.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+sched.o: sched.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 tty.o: tty.c

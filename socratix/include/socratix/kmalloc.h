@@ -27,6 +27,9 @@
 #define __SOCRATIX_KMALLOC_H
 
 
+#include <socratix/unistd.h>
+
+
 extern void *kmalloc (size_t, int);
 extern void  kfree (void *);
 

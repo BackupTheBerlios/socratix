@@ -25,15 +25,18 @@
 
 CC	= gcc
 LINKER	= ld
-CFLAGS	= -Wall -Wstrict-prototypes -c -O2 -m486 -nostdinc -I../include
+CFLAGS	= -Wall -Wstrict-prototypes -c -O2 -m486 -nostdinc -I../include -fno-builtin
 LDFLAGS	= -m elf_i386 -r
 
-OBJS	= page.o memory.o
+OBJS	= kmalloc.o memory.o page.o
 
 all:	mm.o
 
 mm.o:	$(OBJS) Makefile
 	$(LINKER) $(LDFLAGS) -o $@ $(OBJS)
+
+kmalloc.o: kmalloc.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 memory.o: memory.c
 	$(CC) $(CFLAGS) -c $< -o $@

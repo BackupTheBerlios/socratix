@@ -27,38 +27,104 @@
 #define __ASM_STRING_H
 
 
-/* move n 4B-blocks from src to dst */
-#define bcopyl(src, dst, n) \
-{ \
-	asm volatile (	"cld; rep; movsl" :: \
-			"D" ((unsigned long *) (dst)), \
-			"S" ((unsigned long *) (src)), \
-			"c" ((unsigned long) (n))); \
+#include <socratix/unistd.h>
+
+
+/*
+ * the mem* functions in the normal case (byte operations) and in dword
+ * manner (the "l" suffix), where all operations work on dwords
+ */
+
+/* set n bytes in mem to v */
+extern inline void *memset (void *mem, unsigned char v, size_t n)
+{
+	unsigned long __d0, __d1;
+	asm volatile (	"cld\n\t"
+			"rep; stosb"
+			: "=&c" (__d0), "=&D" (__d1)
+			: "1" ((unsigned long) (mem)), "0" (n), "a" (v)
+			: "memory");
+	return mem;
+}
+
+/* set n dwords in mem to v */
+extern inline void *memsetl (void *mem, unsigned long v, size_t n)
+{
+	unsigned long __d0, __d1;
+	asm volatile (	"cld\n\t"
+			"rep; stosl"
+			: "=&c" (__d0), "=&D" (__d1)
+			: "1" ((unsigned long) (mem)), "0" (n), "a" (v)
+			: "memory");
+	return mem;
 }
 
 
-/* make n 4B-blocks zero */
-#define bzerol(addr, n) \
-{ \
-	memsetl (addr, 0L, n); \
+extern inline void *memmove (void *dest, const void *src, size_t n)
+{
+	unsigned long __d0, __d1, __d2;
+
+	if (dest < src) {
+		asm volatile (	"cld\n\t"
+				"rep; movsb"
+				: "=&c" (__d0), "=&S" (__d1), "=&D" (__d2)
+				:"0" (n), "1" ((unsigned long) src),
+				"2" ((unsigned long) dest)
+				: "memory");
+	} else { /* src <= dest */
+		asm volatile (	"std\n\t"
+				"rep; movsb; cld"
+				: "=&c" (__d0), "=&S" (__d1), "=&D" (__d2)
+				:"0" (n), "1" (n - 1 + (const unsigned char *) src),
+				"2" (n - 1 + (unsigned char *) dest)
+				:"memory");
+	}
+
+	return dest;
 }
 
+
+extern inline void *memmovel (void *dest, const void *src, size_t n)
+{
+	unsigned long __d0, __d1, __d2;
+
+	if (dest < src) {
+		asm volatile (	"cld\n\t"
+				"rep; movsl"
+				: "=&c" (__d0), "=&S" (__d1), "=&D" (__d2)
+				:"0" (n), "1" ((unsigned long) src),
+				"2" ((unsigned long) dest)
+				: "memory");
+	} else { /* src <= dest */
+		asm volatile (	"std\n\t"
+				"rep; movsl; cld"
+				: "=&c" (__d0), "=&S" (__d1), "=&D" (__d2)
+				:"0" (n), "1" (n - 1 + (const unsigned long *) src),
+				"2" (n - 1 + (unsigned long *) dest)
+				:"memory");
+	}
+
+	return dest;
+}
+
+
+/*
+ * The BSD mem functions are macros to the "real" mem* functions
+ * Did I mentioned, I love BSD? :)
+ */
+#define bzero(mem, n)		memset ((mem), 0, (n))
+#define bzerol(mem, n)		memsetl ((mem), 0L, (n))
+
+#define bcopy(src, dest, n)	memmove ((dest), (src), (n))
+#define bcopyl(src, dest, n)	memmovel ((dest), (src), (n))
+
+
+/*
+ * The string functions
+ */
 
 /* */
-#define memsetl(addr, val, n) \
-{ \
-	unsigned long __d0, __d1; \
-	asm volatile (	"cld\n\t" \
-			"rep; stosl" \
-			: "=&c" (__d0), "=&D" (__d1) \
-			: "1" ((unsigned long *) (addr)), "0" ((unsigned long) (n)), \
-			  "a" ((unsigned long) (val)) \
-			: "memory"); \
-}
-
-
-/* */
-extern inline int strlen (register const char *s)
+extern inline size_t strlen (const char *s)
 {
 	register const char *sptr asm ("ax");
 

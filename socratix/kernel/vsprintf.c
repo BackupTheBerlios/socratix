@@ -25,6 +25,7 @@
 
 #include <socratix/stdarg.h>
 #include <socratix/ctype.h>
+#include <asm/string.h>
 #include <asm/system.h>
 
 
