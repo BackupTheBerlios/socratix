@@ -54,7 +54,7 @@ struct tss_struct {
 
 
 typedef struct tagTask {
-	unsigned long *kernel_stack;	/* pointer to the task's kernel stack */
+	unsigned long pid;
 	struct tss_struct tss;
 	struct tagTask *next;
 } Task;
@@ -64,7 +64,7 @@ typedef struct tagTask {
  * After an interrupt occurs, the stack look like this
  * (NOTE: reverse order, ss gets pushed first!)
  */
-struct reg_struct {
+typedef struct tagIntStackFrame {
 	unsigned long	ebx;
 	unsigned long	ecx;
 	unsigned long	edx;
@@ -79,7 +79,7 @@ struct reg_struct {
 	unsigned long	eflags;
 	unsigned long	esp;
 	unsigned short	ss, __unused3;
-};
+} IntStackFrame;
 
 
 extern Task *idle_task, *current;

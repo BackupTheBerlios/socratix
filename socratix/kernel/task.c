@@ -50,10 +50,9 @@ struct segment_descriptor_struct
 };
  
 
-extern unsigned long pg_dir, gdt;
+extern unsigned char gdt[];
 
-#define page_dir	((unsigned long *) &pg_dir)
-#define GDT(n)		(((unsigned char *) &gdt) + n)
+#define GDT(n)		(&gdt[n])
 
 
 unsigned next_free_tss = 0x18;
@@ -81,6 +80,8 @@ extern void do_fork (void);
 extern Task *current, *idle_task;
 
 
+unsigned long next_pid = 0;
+
 void init_sched (void)
 {
 	unsigned long eflags;
@@ -93,12 +94,15 @@ void init_sched (void)
 		return;
 	}
 
+	idle_task->pid		= next_pid++;
 	idle_task->next		= idle_task;
+#if 0
 	idle_task->kernel_stack	= kstack;
+#endif
 	idle_task->tss.link	= 0;
 	idle_task->tss.esp0	= (unsigned long) &kstack[PAGE_SIZE >> 2];
 	idle_task->tss.ss0	= KERNEL_DS;
-	idle_task->tss.cr3	= (unsigned long) page_dir;
+	idle_task->tss.cr3	= (unsigned long) &pg_dir[0];
 	idle_task->tss.es	= KERNEL_DS;
 	idle_task->tss.cs	= KERNEL_CS;
 	idle_task->tss.ss	= KERNEL_DS;

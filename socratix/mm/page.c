@@ -29,9 +29,8 @@
 #include <asm/system.h>
 
 
-extern unsigned long pg_dir, _end;
+extern unsigned long _end;
 
-#define page_dir	((unsigned long *) &pg_dir)
 #define kernel_size	((unsigned long) &_end)
 
 
@@ -42,7 +41,10 @@ unsigned long ram_size;
 /* memory map */
 struct mem_blk {
 	struct mem_blk *next;
+
+#ifndef NDEBUG
 	unsigned long state;	/* if set to MEMBLK_FREE, this page is really free (only for debugging, will be removed, when mm tests are completed :)) */
+#endif
 } *mem_map = NULL;
 
 #define MEMBLK_FREE	0xAA55AA55
@@ -56,7 +58,7 @@ extern unsigned long kstack[PAGE_SIZE >> 2];
 
 void init_paging (void)
 {
-	register unsigned long n, d;
+	register unsigned long d;
 	unsigned long ktables;	/* number of kernel page tables */
 	unsigned long kpages;
 
@@ -87,14 +89,14 @@ void init_paging (void)
 	 * area. I might fix this soon.
 	 */
 	for (d = 0; d < ktables; d++) {
-		unsigned long *page_table, t;
+		register unsigned long *page_table, t;
 
 		/* calc the address of the page table */
 		page_table = (unsigned long *)
 			(PAGE_ALIGN (kernel_size) + (d << PAGE_SHIFT));
 
 		/* add the page table to the page directory */
-		page_dir[d] = PAGE_TABLE | (unsigned long) page_table;
+		pg_dir[d] = PAGE_TABLE | (unsigned long) page_table;
 
 		/* map phys. to lin. memory */
 		for (t = 0; t < 1024; t++) {
@@ -136,23 +138,25 @@ void init_paging (void)
 	 * We start after the kernel memory and ignore the reserved area
 	 * between 0x9f000 - 0x100000.
 	 */
-	for (n = kpages; n < (PAGE_ALIGN (ram_size) >> PAGE_SHIFT); n++) {
+	for (d = kpages; d < (PAGE_ALIGN (ram_size) >> PAGE_SHIFT); d++) {
 		struct mem_blk *tmp;
 
-		if (n >= 0x9F && n < 0x100) {
+		if (d >= 0x9F && d < 0x100) {
 			/* skip the reserved memory */
 			continue;
 		}
 
-		tmp = (struct mem_blk *) (n << PAGE_SHIFT);
+		tmp = (struct mem_blk *) (d << PAGE_SHIFT);
 		tmp->next = mem_map;
+#ifndef NDEBUG
 		tmp->state = MEMBLK_FREE;
+#endif
 		mem_map = tmp;
 	}
 
 
 	/* Ok, that was hard work, now we can hopefully enable paging */
-	write_cr3 (page_dir);
+	write_cr3 (pg_dir);
 	write_cr0 (read_cr0 () | 0x80000000);
 	invalidate ();
 }
@@ -169,9 +173,13 @@ unsigned long __get_free_page (void)
 	if ((ptr = mem_map) != NULL) {
 		mem_map = ptr->next;
 
+#ifdef NDEBUG
+		write_flags (eflags);
+		return (unsigned long) ptr;
+#else /* DEBUG */
 		/* check if page is really free */
 		if (ptr->state == MEMBLK_FREE) {
-			ptr->state = 0;
+			ptr->state = ~MEMBLK_FREE;
 			write_flags (eflags);
 
 			return (unsigned long) ptr;
@@ -187,26 +195,13 @@ unsigned long __get_free_page (void)
 			"up with memory management or that your installed system "
 			"RAM is broken. In each case we couldn't continue well, "
 			"so we'll give up!");
-
+#endif
 	}
 
 	/* no phys. mem left */
 	printk ("get_free_page: Not enough physical memory\n");
 	write_flags (eflags);
 	return 0L;
-}
-
-
-unsigned long get_free_page (void)
-{
-	unsigned long addr;
-
-	if ((addr = __get_free_page ()) != 0L) {
-		/* clear the page */
-		bzerol (addr, PAGE_SIZE >> 2);
-	}
-
-	return addr;
 }
 
 
@@ -223,23 +218,27 @@ void free_page (unsigned long addr)
 	 * lookup the page table addr in the kernel page directory and
 	 * check if page is present
 	 */
-	if ((page_table = (unsigned long *) PAGE_ADDR (page_dir[addr >> (PAGE_SHIFT + 10)])) != NULL
+	if ((page_table = (unsigned long *) PAGE_ADDR (pg_dir[addr >> (PAGE_SHIFT + 10)])) != NULL
 	&& (page_table[(addr >> PAGE_SHIFT) & 0x3FF] & PAGE_PRESENT) != 0) {
 		ptr = (struct mem_blk *) PAGE_ADDR (addr);
 
+#ifndef NDEBUG
 		/* check if page wasn't already freed */
 		if (ptr->state != MEMBLK_FREE) {
-			ptr->next = mem_map;
 			ptr->state = MEMBLK_FREE;
+#endif
+			ptr->next = mem_map;
 			mem_map = ptr;
 
 end:			write_flags (eflags);
 			return;
+#ifndef NDEBUG
 		}
 
 		/* page was already free, some messed up in mm */
 		printk ("free_page: trying to free already free page %08X\n", ptr);
 		goto end;
+#endif
 	}
 
 	/* we're trying to free a not present page */

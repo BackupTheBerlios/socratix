@@ -28,6 +28,7 @@
 
 
 #include <asm/segment.h>
+#include <asm/string.h>
 #include <asm/page.h>
 
 
@@ -40,10 +41,31 @@
 #define PAGE_ALIGN(ptr)	(((unsigned long) (ptr) + (PAGE_SIZE - 1)) & PAGE_MASK)
 
 
-/* prototypes */
+/* mm/page.c */
 extern unsigned long __get_free_page (void);
-extern unsigned long get_free_page (void);
 extern void free_page (unsigned long);
+
+
+/*
+ * get a new cleared page from the system
+ */
+extern inline unsigned long get_free_page (void)
+{
+	unsigned long addr;
+
+	if ((addr = __get_free_page ()) != 0L)
+		/* clear the page */
+		bzerol (addr, PAGE_SIZE >> 2);
+
+	return addr;
+}
+
+
+/*
+ * The page directory of task 0, the idle/swapper task
+ * (see boot/head.S)
+ */
+extern unsigned long pg_dir[PAGE_SIZE >> 2];
 
 
 #endif /* __SOCRATIX_PAGE_H */

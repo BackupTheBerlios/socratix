@@ -133,11 +133,13 @@ pg_dir:
 	.fill	PAGE_SIZE, 1, 0x0
 
 
+/*
+ * The initial kernel stack for the swapper (idle) task
+ */
 .org	0x2000
-
-
 .global	kstack
 kstack:
+	.fill	PAGE_SIZE, 1, 0x0
 
 
 .org	0x3000
@@ -215,7 +217,7 @@ idt_description:
  * written by Volker. Seems to work good,
  * after a few improvements.
  */
-.align	2
+.align	4
 .global	dummy_irq
 dummy_irq:
 	PUSH_REGS
@@ -230,7 +232,7 @@ dummyirq_msg:
 	.asciz	"Unhandled IRQ\n"
 
 
-.align	2
+.align	4
 .global	do_timer
 do_timer:
 	PUSH_REGS
@@ -239,7 +241,7 @@ do_timer:
 	iret
 
 
-.align	2
+.align	4
 .global	do_fork, ret_from_fork
 do_fork:
 	PUSH_REGS

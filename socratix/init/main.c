@@ -78,7 +78,7 @@ void start_kernel (void)
 				unsigned n = i;
 				while (n-- > 0);
 			}
-			printk ("child ");
+			printk ("task[%d]\n", current->pid);
 		}
 	} else if (i < 0) {
 		/* error */
@@ -92,7 +92,7 @@ void start_kernel (void)
 	if ((i = fork ()) == 0) {
 		/* next child */
 		for (;;) {
-			printk ("child2 ");
+			printk ("task[%d]\n", current->pid);
 			for (i = 0; i < 0x200; i++) {
 				unsigned n = i;
 				while (n-- > 0);
@@ -110,7 +110,7 @@ void start_kernel (void)
 				unsigned n = i;
 				while (n-- > 0);
 			}
-			printk ("child3 ");
+			printk ("task[%d]\n", current->pid);
 			for (i = 0; i < 0x100; i++) {
 				unsigned n = i;
 				while (n-- > 0);
@@ -121,7 +121,7 @@ void start_kernel (void)
 	}
 
 	for (;;) {
-		printk ("father ");
+		printk ("task[%d]\n", current->pid);
 		for (i = 0; i < 0x200; i++) {
 			unsigned n = i;
 			while (n-- > 0);

@@ -26,7 +26,7 @@ LINKER	= ld
 CFLAGS	= -Wall -Wstrict-prototypes -c -O2 -m486 -nostdinc -I../include -fno-builtin
 LDFLAGS	= -m elf_i386 -r
 
-OBJS	= cpu.o fork.o irq.o panic.o printk.o sched.o tty.o vsprintf.o
+OBJS	= cpu.o fork.o irq.o panic.o printk.o task.o tty.o vsprintf.o
 
 all:	kernel.o
 
@@ -48,7 +48,7 @@ panic.o: panic.c
 printk.o: printk.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-sched.o: sched.c
+task.o: task.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 tty.o: tty.c

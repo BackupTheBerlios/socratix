@@ -86,15 +86,17 @@ static int copy_page_tables (Task *from, Task *to)
 
 extern void set_tss (Task *);
 
-volatile int syscall_fork (struct reg_struct regs)
+extern unsigned long next_pid;
+
+volatile int syscall_fork (IntStackFrame regs)
 {
 	extern void ret_from_fork (void);
-	struct reg_struct *childregs;
-	unsigned long eflags;
+
+	unsigned long eflags, *kernel_stack;
+	IntStackFrame  *childregs;
 	Task *new;
 
 	eflags = read_flags ();
-	cli ();
 
 	/* allocate memory for the new process */
 	if ((new = kmalloc (sizeof (Task), 0)) == NULL) {
@@ -102,6 +104,7 @@ volatile int syscall_fork (struct reg_struct regs)
 		return -ENOMEM;
 	}
 
+	/* copy the old ptask to the new one */
 	*new = *current;
 
 	if (!copy_page_tables (current, new)) {
@@ -112,10 +115,12 @@ error:		kfree (new);
 	}
 
 	/* get a new stack for the task */
-	if ((new->kernel_stack = (unsigned long *) __get_free_page ()) == 0L) {
+	if ((kernel_stack = (unsigned long *) __get_free_page ()) == 0L) {
 		printk ("fork: Unable to create new kernel stack\n");
 		goto error;
 	}
+
+	new->pid	= next_pid++;
 
 	new->tss.es	= KERNEL_DS;
 	new->tss.cs	= KERNEL_CS;
@@ -123,12 +128,12 @@ error:		kfree (new);
 	new->tss.ds	= KERNEL_DS;
 	new->tss.fs	= KERNEL_DS;
 	new->tss.gs	= KERNEL_DS;
-	new->tss.esp0	= (unsigned long) &new->kernel_stack[PAGE_SIZE >> 2];
+	new->tss.esp0	= (unsigned long) &kernel_stack[PAGE_SIZE >> 2];
 	new->tss.ss0	= KERNEL_DS;
 	new->tss.link	= 0;
 	new->tss.eflags	= regs.eflags & 0xFFFFCFFF;	/* IOPL 0 for new process */
 
-	childregs = ((struct reg_struct *) &new->kernel_stack[PAGE_SIZE >> 2]) - 1;
+	childregs = ((IntStackFrame *) &kernel_stack[PAGE_SIZE >> 2]) - 1;
 	*childregs = regs;
 	childregs->eax = 0;
 	new->tss.esp = (unsigned long) childregs;
@@ -136,7 +141,11 @@ error:		kfree (new);
 
 	set_tss (new);
 
-	/* add new task to the task list */
+	/*
+	 * add new task to the task list (this have to be done with
+	 * interrupts disabled)
+	 */
+	cli ();
 	new->next = current->next;
 	current->next = new;
 
